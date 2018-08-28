@@ -35,6 +35,47 @@
     inline bool operator!=(const T &a, const T &b)      \
     { return !operator==(a, b); }
 
+/* *********** FM Operator indexes *********** */
+enum
+{
+    // Base values
+    OPERATOR_BASE1 = 0,
+    OPERATOR_BASE2 = 2,
+    // Relative values
+    OPERATOR_MODULATOR = 0,
+    OPERATOR_CARRIER = 1,
+    // Absolute
+    OPERATOR_MODULATOR1 = 0,
+    OPERATOR_CARRIER1 = 1,
+    OPERATOR_MODULATOR2 = 2,
+    OPERATOR_CARRIER2 = 3,
+};
+
+/* *********** Structures for internal use *********** */
+struct OPL3_Operator
+{
+    uint32_t data_E862;
+    uint32_t data_20;
+    uint32_t data_40;
+};
+ADLDATA_BYTE_COMPARABLE(struct OPL3_Operator)
+
+struct oplInstData
+{
+    OPL3_Operator   OPS[4];
+    //! Feedback/connection bits for the channel
+    uint8_t         feedconn[2];
+    int8_t          noteOffset[2];
+    uint8_t         tone;
+    uint8_t         flags;
+    uint16_t        ms_sound_kon;  // Number of milliseconds it produces sound;
+    uint16_t        ms_sound_koff;
+    int8_t          midi_velocity_offset;
+    double          voice2_fine_tune;
+};
+ADLDATA_BYTE_COMPARABLE(struct oplInstData)
+
+/* *********** Structures for embedded banks storage *********** */
 struct adldata
 {
     uint32_t    modulator_E862, carrier_E862;  // See below
