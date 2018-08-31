@@ -1133,7 +1133,8 @@ void MIDIplay::noteUpdate(size_t midCh,
     for(unsigned ccount = 0; ccount < info.chip_channels_count; ccount++)
     {
         const MIDIchannel::NoteInfo::Phys &ins = info.chip_channels[ccount];
-        uint16_t c   = ins.chip_chan;
+        uint16_t c          = ins.chip_chan;
+        uint16_t c_slave    = info.chip_channels[1].chip_chan;
 
         if(select_adlchn >= 0 && c != select_adlchn)
             continue;
@@ -1292,7 +1293,7 @@ void MIDIplay::noteUpdate(size_t midCh,
                     bend += static_cast<double>(vibrato) * m_midiChannels[midCh].vibdepth * std::sin(m_midiChannels[midCh].vibpos);
 
 #define BEND_COEFFICIENT 172.4387
-                m_synth.noteOn(c, BEND_COEFFICIENT * std::exp(0.057762265 * (currentTone + bend + phase)));
+                m_synth.noteOn(c, c_slave, BEND_COEFFICIENT * std::exp(0.057762265 * (currentTone + bend + phase)));
 #undef BEND_COEFFICIENT
                 if(hooks.onNote)
                     hooks.onNote(hooks.onNote_userData, c, noteTone, midiins, vol, midibend);
@@ -1599,7 +1600,7 @@ void MIDIplay::setRPN(size_t midCh, unsigned value, bool MSB)
     case 0x0109 + 1*0x10000 + 1*0x20000:
         if((m_synthMode & Mode_XG) != 0) // Vibrato depth
         {
-            m_midiChannels[midCh].vibdepth = ((value - 64) * 0.15) * 0.01;
+            m_midiChannels[midCh].vibdepth = (((int)value - 64) * 0.15) * 0.01;
         }
         break;
     case 0x010A + 1*0x10000 + 1*0x20000:
