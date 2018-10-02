@@ -45,6 +45,7 @@ Library is based on the ADLMIDI, a MIDI player for Linux and Windows with OPL3 e
 * CC74 "Brightness" affects a modulator scale (to simulate frequency cut-off on WT synths)
 * Portamento support (CC5, CC37, and CC65)
 * SysEx support that supports some generic, GS, and XG features
+* Full-panning stereo option (works for emulators only)
 
 # How to build
 To build libADLMIDI you need to use CMake:
@@ -118,8 +119,14 @@ You need to make in the any IDE a library project and put into it next files
 
 ### Internal code (src)
 * chips/*       - Various OPL3 chip emulators and commonized interface over them
+* wopl/*        - WOPL bank format library
 * adldata.hh    - bank structures definition
 * adlmidi_private.hpp - header of internal private APIs
+* adlmidi_bankmap.h - MIDI bank hash table
+* adlmidi_bankmap.tcc - MIDI bank hash table (Implementation)
+* adlmidi_cvt.hpp - Instrument conversion template
+* adlmidi_ptr.hpp - Custom implementations of smart pointers for C++98
+* file_reader.hpp - Generic file and memory reader
 
 * adldata.cpp	 - Automatically generated database of FM banks from "fm_banks" directory via "gen_adldata" tool. **Don't build it if you have defined `DISABLE_EMBEDDED_BANKS` macro!**
 * adlmidi.cpp   - code of library
@@ -159,10 +166,10 @@ To build that example you will need to have installed SDL2 library.
 
 # Todo
 * Check out for XG/GS standards to provide a support to use any channels as percussion and also check some of SysEx commands.
-* Add support of MIDI Format 2 files (FL Studio made MIDI-files are wired and opening of those files making lossy of tempo and some meta-information events)
+* Add support of MIDI Format 2 files
 
 # Changelog
-## 1.4.0   <dev>
+## 1.4.0   2018-10-01
  * Implemented a full support for Portamento! (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
  * Added support for SysEx event handling! (Thanks to [Jean Pierre Cimalando](https://github.com/jpcima) for a work!)
  * Added support for GS way of custom drum channels (through SysEx events)
@@ -174,6 +181,9 @@ To build that example you will need to have installed SDL2 library.
  * Added API to disable specific MIDI tracks or play one of MIDI tracks solo
  * Added support for more complex loop (loopStart=XX, loopEnd=0). Where XX - count of loops, or 0 - infinite. Nested loops are supported without of any limits.
  * XMIDI now supports loops
+ * Added working implementation of TMB's velocity offset
+ * Added support for full-panning stereo option (Thanks to [Christopher Snowhill](https://github.com/kode54) for a work!)
+ * Fixed inability to play high notes due physical tone frequency out of range on the OPL3 chip
 
 ## 1.3.3   2018-06-19
  * Fixed an inability to load another custom bank without of library re-initialization

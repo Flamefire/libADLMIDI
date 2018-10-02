@@ -34,10 +34,9 @@ void adl_audioTickHandler(void *instance, uint32_t chipId, uint32_t rate)
 }
 #endif
 
-int adlRefreshNumCards(ADL_MIDIPlayer *device)
+int adlCalculateFourOpChannels(MIDIplay *play, bool silent)
 {
     size_t n_fourop[2] = {0, 0}, n_total[2] = {0, 0};
-    MIDIplay *play = reinterpret_cast<MIDIplay *>(device->adl_midiPlayer);
 
     //Automatically calculate how much 4-operator channels is necessary
 #ifndef DISABLE_EMBEDDED_BANKS
@@ -56,7 +55,7 @@ int adlRefreshNumCards(ADL_MIDIPlayer *device)
                 adlinsdata2 &ins = it->second.ins[i];
                 if(ins.flags & adlinsdata::Flag_NoSound)
                     continue;
-                if((ins.adl[0] != ins.adl[1]) && ((ins.flags & adlinsdata::Flag_Pseudo4op) == 0))
+                if((ins.flags & adlinsdata::Flag_Real4op) != 0)
                     ++n_fourop[div];
                 ++n_total[div];
             }
@@ -72,8 +71,8 @@ int adlRefreshNumCards(ADL_MIDIPlayer *device)
             if(insno == 198)
                 continue;
             ++n_total[a / 128];
-            adlinsdata2 ins(adlins[insno]);
-            if(ins.flags & adlinsdata::Flag_Real4op)
+            adlinsdata2 ins = adlinsdata2::from_adldata(::adlins[insno]);
+            if((ins.flags & adlinsdata::Flag_Real4op) != 0)
                 ++n_fourop[a / 128];
         }
     }
@@ -100,9 +99,10 @@ int adlRefreshNumCards(ADL_MIDIPlayer *device)
         : (play->m_setup.NumCards == 1 ? 1 : play->m_setup.NumCards * 4);
 */
 
-    play->m_synth.m_numFourOps = play->m_setup.numFourOps = static_cast<unsigned>(numFourOps * play->m_setup.numChips);
+    play->m_synth.m_numFourOps = static_cast<unsigned>(numFourOps * play->m_synth.m_numChips);
     // Update channel categories and set up four-operator channels
-    play->m_synth.updateChannelCategories();
+    if(!silent)
+        play->m_synth.updateChannelCategories();
 
     return 0;
 }

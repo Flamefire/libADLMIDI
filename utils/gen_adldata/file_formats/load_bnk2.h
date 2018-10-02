@@ -88,10 +88,12 @@ static bool LoadBNK2(const char *fn, unsigned bank, const char *prefix,
         tmp2.pseudo4op = false;
         tmp2.real4op = false;
         tmp2.voice2_fine_tune = 0.0;
+        tmp2.midi_velocity_offset = 0;
 
         if(xxP24NNN & 8)
         {
             // dual-op
+            tmp2.real4op = true;
             tmp[1].diff = true;
             size_t resno = InsertIns(tmp[0], tmp[1], tmp2, std::string(1, '\377') + name, name2);
             SetBank(bank, (unsigned int)gmno, resno);

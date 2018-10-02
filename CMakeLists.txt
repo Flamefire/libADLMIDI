@@ -65,6 +65,18 @@ function(set_legacy_standard destTarget)
         endif()
     endif()
 endfunction()
+
+function(set_visibility_hidden destTarget)
+    if(CMAKE_C_COMPILER_ID MATCHES "^(GNU|Clang)$" AND NOT DJGPP)
+        if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER 3.2)
+            target_compile_options(${destTarget} PRIVATE
+              $<$<COMPILE_LANGUAGE:CXX>:-fvisibility-inlines-hidden> -fvisibility=hidden)
+        else()
+            target_compile_options(${destTarget} PRIVATE -fvisibility=hidden)
+        endif()
+        target_compile_definitions(${destTarget} PRIVATE -DLIBADLMIDI_VISIBILITY)
+    endif()
+endfunction()
 #===========================================================================================
 
 option(libADLMIDI_STATIC   "Build static library of libADLMIDI" ON)
@@ -214,6 +226,7 @@ if(WITH_MIDI_SEQUENCER)
     list(APPEND libADLMIDI_SOURCES
         ${libADLMIDI_SOURCE_DIR}/src/adlmidi_sequencer.cpp
     )
+    add_definitions(-DENABLE_END_SILENCE_SKIPPING)
 endif()
 
 if(NOT WITH_MUS_SUPPORT OR NOT WITH_MIDI_SEQUENCER)
@@ -273,6 +286,7 @@ if(libADLMIDI_STATIC)
     set_target_properties(ADLMIDI_static PROPERTIES OUTPUT_NAME ADLMIDI)
     target_include_directories(ADLMIDI_static PUBLIC ${libADLMIDI_SOURCE_DIR}/include)
     set_legacy_standard(ADLMIDI_static)
+    set_visibility_hidden(ADLMIDI_static)
     list(APPEND libADLMIDI_INSTALLS ADLMIDI_static)
     if(WITH_EMBEDDED_BANKS AND WITH_GENADLDATA)
         add_dependencies(ADLMIDI_static gen-adldata-run)
@@ -284,7 +298,11 @@ if(libADLMIDI_SHARED)
     set_target_properties(ADLMIDI_shared PROPERTIES OUTPUT_NAME ADLMIDI)
     target_include_directories(ADLMIDI_shared PUBLIC ${libADLMIDI_SOURCE_DIR}/include)
     set_legacy_standard(ADLMIDI_shared)
+    set_visibility_hidden(ADLMIDI_shared)
     list(APPEND libADLMIDI_INSTALLS ADLMIDI_shared)
+    if(WIN32)
+        target_compile_definitions(ADLMIDI_shared PRIVATE "-DADLMIDI_BUILD_DLL")
+    endif()
     if(WITH_EMBEDDED_BANKS AND WITH_GENADLDATA)
         add_dependencies(ADLMIDI_shared gen-adldata-run)
     endif()
@@ -427,7 +445,9 @@ if(WITH_ADLMIDI2)
 
     if(libADLMIDI_SHARED)
         add_dependencies(adlmidi2 ADLMIDI_shared)
-        set_target_properties(adlmidi2 PROPERTIES COMPILE_FLAGS "-Wl,-rpath='$$ORIGIN/../lib'")
+        if(NOT MSVC)
+            set_target_properties(adlmidi2 PROPERTIES COMPILE_FLAGS "-Wl,-rpath='$$ORIGIN/../lib'")
+        endif()
     else()
         if(NOT libADLMIDI_STATIC)
             message(FATAL_ERROR "libADLMIDI is required to be built!")
@@ -487,27 +507,30 @@ if(WITH_VLC_PLUGIN)
     list(APPEND adlmidi_vlc_src
         ${libADLMIDI_SOURCE_DIR}/utils/vlc_codec/libadlmidi.c)
 
-    add_library(adlmidi_plugin MODULE ${adlmidi_vlc_src})
-    target_compile_options(adlmidi_plugin PUBLIC
+    add_library(adlmidi_vlc_plugin MODULE ${adlmidi_vlc_src})
+    set_target_properties(adlmidi_vlc_plugin PROPERTIES OUTPUT_NAME adlmidi_plugin)
+    target_compile_options(adlmidi_vlc_plugin PUBLIC
                 "-DVLC_MODULE_COPYRIGHT=\"Copyright \(c\) Vitaly Novichkov\""
                 "-DVLC_MODULE_LICENSE=\"GPLv3\""
                 "-DMODULE_STRING=\"adlmidi\""
                 ${VLCPLUGIN_DEFINITIONS})
-    target_include_directories(adlmidi_plugin PRIVATE
+    target_include_directories(adlmidi_vlc_plugin PRIVATE
             ${LIBVLC_INCLUDE_DIR}/vlc/plugins
             ${LIBVLC_INCLUDE_DIR}/vlc)
-    target_link_libraries(adlmidi_plugin ADLMIDI_IF vlccore m stdc++)
-    # target_link_libraries(adlmidi_plugin INTERFACE "-export-symbol-regex ^vlc_entry")
+    target_link_libraries(adlmidi_vlc_plugin ADLMIDI_IF vlccore m stdc++)
+    # target_link_libraries(adlmidi_vlc_plugin INTERFACE "-export-symbol-regex ^vlc_entry")
+
+    install(TARGETS adlmidi_vlc_plugin DESTINATION "${VLCPLUGIN_CODEC_INSTALL_PATH}")
 
     if(libADLMIDI_SHARED)
-        add_dependencies(adlmidi_plugin ADLMIDI_shared)
+        add_dependencies(adlmidi_vlc_plugin ADLMIDI_shared)
         # ========= WIP =========
         # set_target_properties(adlmidiplay PROPERTIES COMPILE_FLAGS "-Wl,-rpath='$$ORIGIN/../lib'")
     else()
         if(NOT libADLMIDI_STATIC)
             message(FATAL_ERROR "libADLMIDI is required to be built!")
         endif()
-        add_dependencies(adlmidi_plugin ADLMIDI_static)
+        add_dependencies(adlmidi_vlc_plugin ADLMIDI_static)
     endif()
 
 endif()

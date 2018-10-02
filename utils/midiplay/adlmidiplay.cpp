@@ -247,6 +247,7 @@ int main(int argc, char **argv)
             " --solo <track>             Selects a solo track to play\n"
             " --only <track1,...,trackN> Selects a subset of tracks to play\n"
             #ifndef HARDWARE_OPL3
+            " -fp Enables full-panning stereo support\n"
             " --emu-nuked  Uses Nuked OPL3 v 1.8 emulator\n"
             " --emu-nuked7 Uses Nuked OPL3 v 1.7.4 emulator\n"
             " --emu-dosbox Uses DosBox 0.74 OPL3 emulator\n"
@@ -405,7 +406,8 @@ int main(int argc, char **argv)
         else if(!std::strcmp("--emu-dosbox", argv[2]))
             emulator = ADLMIDI_EMU_DOSBOX;
 #endif
-
+        else if(!std::strcmp("-fp", argv[2]))
+            adl_setSoftPanEnabled(myDevice, 1);
         else if(!std::strcmp("-mb", argv[2]))
             multibankFromEnbededTest = true;
         else if(!std::strcmp("-s", argv[2]))
@@ -604,7 +606,6 @@ int main(int argc, char **argv)
         printError(adl_errorInfo(myDevice));
         return 1;
     }
-    std::fprintf(stdout, " - Number of chips %d\n", adl_getNumChips(myDevice));
 #else
     int numOfChips = 1;
     adl_setNumChips(myDevice, numOfChips);
@@ -619,7 +620,6 @@ int main(int argc, char **argv)
             return 1;
         }
     }
-    std::fprintf(stdout, " - Number of four-ops %d\n", adl_getNumFourOpsChn(myDevice));
 
     std::string musPath = argv[1];
     //Open MIDI file to play
@@ -629,6 +629,8 @@ int main(int argc, char **argv)
         return 2;
     }
 
+    std::fprintf(stdout, " - Number of chips %d\n", adl_getNumChipsObtained(myDevice));
+    std::fprintf(stdout, " - Number of four-ops %d\n", adl_getNumFourOpsChnObtained(myDevice));
     std::fprintf(stdout, " - Track count: %lu\n", (unsigned long)adl_trackCount(myDevice));
 
     if(soloTrack != ~(size_t)0)
